@@ -1,0 +1,331 @@
+@font-face {
+  font-family: 'DotGothic16';
+  src: url('../assets/fonts/DotGothic16-Regular.ttf') format('truetype');
+  font-display: block;
+}
+
+:root {
+  --red: #f86048;
+  --ink: #383838;
+  --gray: #a0a0a0;
+  --font: 'DotGothic16', 'Hiragino Maru Gothic ProN', 'Meiryo', sans-serif;
+}
+
+html, body {
+  margin: 0;
+  touch-action: manipulation;
+  height: 100%;
+  overflow: hidden;
+  background: #000;
+}
+
+/* 論理サイズ 1280x720 のステージ。ui.js が scale して中央に置く */
+#stage {
+  position: absolute;
+  left: 0;
+  top: 0;
+  width: 1280px;
+  height: 720px;
+  transform-origin: 0 0;
+  overflow: hidden;
+  background: #78c8f8;
+  color: var(--ink);
+  font-family: var(--font);
+  user-select: none;
+  -webkit-tap-highlight-color: transparent; /* iPhone でタップのたびに灰色に光らないように */
+}
+
+/* 横長（PC・プロジェクター）：絵と UI をステージ全体に重ねる */
+#view-frame, #view, #hud { position: absolute; inset: 0; }
+#view { width: 1280px; height: 720px; transform-origin: 0 0; }
+#scene, #sprites { position: absolute; inset: 0; }
+
+/* タッチ端末だけに出す操作ボタン */
+#touchbar, #name-ok { display: none; }
+body.is-touch #name-ok { display: block; }
+body.is-touch #touchbar {
+  display: flex;
+  position: absolute;
+  right: 32px;
+  top: 84px;
+  gap: 8px;
+  z-index: 5;
+}
+#touchbar button, #name-ok {
+  font: 22px var(--font);
+  color: var(--ink);
+  background: #fff;
+  border: 4px solid var(--red);
+  border-radius: 10px;
+  padding: 6px 14px;
+  min-height: 44px;
+}
+#touchbar button:disabled { opacity: .35; }
+#name-ok { margin: 12px auto 0; }
+#scene svg { width: 100%; height: 100%; display: block; }
+
+.sprite { position: absolute; transition: filter .2s; isolation: isolate; }
+/* 足もとの影：床に立っているように見せる */
+.sprite::after {
+  content: "";
+  position: absolute;
+  left: 12%;
+  right: 12%;
+  bottom: -8px;
+  height: 16px;
+  border-radius: 50%;
+  background: rgba(0, 0, 0, .22);
+  z-index: -1;
+}
+.sprite svg { width: 100%; height: auto; display: block; }
+.sprite.dim { filter: brightness(.45) saturate(.6); }
+.sprite .label {
+  position: absolute;
+  left: 50%;
+  bottom: 100%;
+  transform: translate(-50%, -8px);
+  white-space: nowrap;
+  font-size: 24px;
+  background: #fff;
+  border: 3px solid var(--ink);
+  border-radius: 8px;
+  padding: 2px 12px;
+}
+.sprite.jump { animation: jump .3s steps(3) 2; }
+.sprite.jump::before {
+  content: '♪';
+  position: absolute;
+  left: 50%;
+  bottom: 100%;
+  transform: translate(-50%, -6px);
+  font-size: 48px;
+  color: var(--red);
+}
+@keyframes jump { 50% { transform: translateY(-24px); } }
+
+/* GBA風ウィンドウ：白地＋赤い角丸枠＋内側グレー線 */
+.box {
+  position: absolute;
+  box-sizing: border-box;
+  background: #fff;
+  border: 6px solid var(--red);
+  border-radius: 14px;
+  box-shadow: inset 0 0 0 5px #fff, inset 0 0 0 9px var(--gray);
+}
+
+#window {
+  left: 32px;
+  right: 32px;
+  bottom: 24px;
+  height: 196px;
+  padding: 26px 40px;
+  font-size: 32px;
+  line-height: 1.5;
+}
+#window .speaker {
+  display: inline-block;
+  font-size: 24px;
+  color: #fff;
+  background: var(--red);
+  border-radius: 6px;
+  padding: 0 10px;
+  margin-right: 8px;
+  vertical-align: 4px;
+}
+#window .more {
+  position: absolute;
+  right: 28px;
+  bottom: 16px;
+  animation: blink 1s steps(2) infinite;
+}
+@keyframes blink { 50% { opacity: 0; } }
+
+#menu {
+  font-size: 30px;
+  line-height: 1.6;
+  padding: 22px 36px 22px 28px;
+}
+#menu.window { left: 32px; right: 32px; bottom: 24px; height: 196px; }
+#menu.side { right: 32px; bottom: 236px; min-width: 300px; }
+#menu .item { white-space: nowrap; }
+#menu .item::before { content: '\3000'; display: inline-block; width: 1.2em; }
+#menu .item.on::before { content: '▶'; }
+
+#header {
+  position: absolute;
+  left: 24px;
+  right: 24px;
+  top: 20px;
+  display: flex;
+  gap: 12px;
+  font-size: 28px;
+}
+#header .num { background: var(--red); color: #fff; border-radius: 8px; padding: 4px 16px; }
+#header .title { flex: 1; background: var(--ink); color: #fff; border-radius: 8px; padding: 4px 16px; }
+
+#gauges {
+  right: 32px;
+  top: 24px;
+  width: 480px;
+  padding: 18px 26px;
+}
+.gauge { display: flex; align-items: center; gap: 12px; margin: 6px 0; font-size: 24px; }
+.gauge b { font-weight: normal; width: 7em; }
+.gauge i { flex: 1; height: 16px; background: #585858; border-radius: 10px; padding: 3px; }
+.gauge s { display: block; height: 100%; border-radius: 8px; text-decoration: none; transition: width 1s; }
+
+#name-entry {
+  left: 50%;
+  top: 110px;
+  transform: translateX(-50%);
+  padding: 24px 32px;
+}
+#name-input {
+  font: 40px var(--font);
+  width: 9em;
+  border: none;
+  border-bottom: 4px solid var(--ink);
+  outline: none;
+  text-align: center;
+}
+
+#confirm {
+  left: 50%;
+  top: 50%;
+  transform: translate(-50%, -50%);
+  padding: 28px 40px;
+  font-size: 30px;
+  line-height: 1.6;
+  z-index: 10;
+}
+
+[hidden] { display: none !important; }
+
+/* メニュー項目の注記（「〇〇の要望」）は縦長レイアウトだけで出す */
+#menu .item small { display: none; }
+
+/* ---- 縦長（縦持ちのスマホ）：上に絵のパネル、下に UI を縦に並べる ---- */
+#window .speaker { display: none; }
+body.is-portrait #window .speaker { display: inline-block; font-size: 13px; vertical-align: 2px; }
+body.is-portrait .sprite .label { display: none; }
+
+body.is-portrait #stage {
+  position: fixed;
+  inset: 0;
+  width: 100vw;
+  height: 100vh;  /* 100dvh 非対応の古い Safari 用 */
+  height: 100dvh;
+  display: flex;
+  flex-direction: column;
+  overflow-y: auto; /* 小さいスマホ（iPhone SE など）で下部バーが切れないよう、はみ出したらスクロール */
+  background: #f8f0e0;
+}
+body.is-portrait #view-frame { position: relative; inset: auto; flex: none; overflow: hidden; }
+body.is-portrait #hud { display: contents; }
+body.is-portrait #header {
+  position: static;
+  order: -1;
+  margin: 0;
+  gap: 6px;
+  padding: 8px 10px;
+  font-size: 15px;
+  background: var(--ink);
+}
+body.is-portrait #header .num { padding: 0 8px; border-radius: 4px; }
+body.is-portrait #header .title { padding: 0; }
+body.is-portrait #gauges {
+  position: static;
+  order: 1;
+  width: auto;
+  margin: 8px 8px 0;
+  padding: 10px 14px;
+}
+body.is-portrait .gauge { font-size: 14px; margin: 3px 0; }
+body.is-portrait .gauge i { height: 10px; }
+body.is-portrait #window {
+  position: static;
+  order: 2;
+  margin: 8px;
+  height: auto;
+  min-height: 84px;
+  flex: 1;
+  overflow-y: auto;
+  padding: 14px 16px 28px;
+  font-size: 18px;
+  line-height: 1.7;
+}
+body.is-portrait #window .more { right: 16px; bottom: 8px; }
+body.is-portrait #menu,
+body.is-portrait #menu.window,
+body.is-portrait #menu.side {
+  position: static;
+  order: 3;
+  margin: 0 8px 8px;
+  height: auto;
+  min-width: 0;
+  padding: 0;
+  background: none;
+  border: none;
+  box-shadow: none;
+  font-size: 17px;
+  line-height: 1.4;
+}
+body.is-portrait #menu .item {
+  white-space: normal;
+  min-height: 48px;
+  box-sizing: border-box;
+  padding: 10px 14px;
+  margin: 0 0 8px;
+  background: #fff;
+  border: 4px solid var(--red);
+  border-radius: 12px;
+}
+body.is-portrait #menu .item::before { display: none; }
+body.is-portrait #menu .item small { display: block; margin-top: 2px; font-size: 12px; color: #787878; }
+/* 名前の入力欄は絵のすぐ下に置き、スマホのキーボードに隠れないようにする */
+body.is-portrait #name-entry {
+  position: static;
+  order: 1;
+  transform: none;
+  margin: 0 8px 8px;
+  padding: 14px;
+}
+body.is-portrait #name-input { width: 100%; font-size: 24px; box-sizing: border-box; }
+body.is-portrait #name-ok { width: 100%; min-height: 48px; }
+body.is-portrait #confirm {
+  position: fixed;
+  width: calc(100vw - 48px);
+  font-size: 18px;
+  padding: 18px;
+}
+body.is-portrait #confirm .item {
+  display: block !important;
+  min-height: 44px;
+  margin: 10px 0 0 !important;
+  padding: 8px 12px;
+  border: 3px solid var(--red);
+  border-radius: 10px;
+  text-align: center;
+}
+body.is-portrait #confirm .item::before { display: none; }
+body.is-portrait.is-touch #touchbar {
+  position: static;
+  order: 10;
+  margin-top: auto;
+  justify-content: space-around;
+  padding: 6px 4px calc(6px + env(safe-area-inset-bottom));
+  background: var(--ink);
+}
+body.is-portrait #touchbar button { font-size: 14px; padding: 4px 10px; border-width: 3px; }
+
+/* 横持ちのスマホ・タブレット：名前の入力欄をキーボードに隠れない上の方へ。
+   操作ボタンは左上に縦に並べ、右上のゲージや中央の名前欄・人物に重ならないようにする */
+body.is-touch:not(.is-portrait) #name-entry { top: 24px; }
+body.is-touch:not(.is-portrait) #touchbar {
+  right: auto;
+  left: 16px;
+  top: 84px;
+  flex-direction: column;
+  align-items: flex-start;
+}
+body.is-touch:not(.is-portrait) #touchbar button { font-size: 30px; min-height: 72px; }
